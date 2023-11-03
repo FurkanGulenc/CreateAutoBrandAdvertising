@@ -1,14 +1,13 @@
 from fastapi import FastAPI, File, Form, UploadFile, HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
-from PIL import Image, ImageDraw, ImageFont, ImageOps
+from PIL import Image, ImageOps
 from io import BytesIO
 from utils.create_image_template import create_marketing_image
 import io
+from diffusers import DiffusionPipeline
 import torch
-from diffusers import StableDiffusionInstructPix2PixPipeline, EulerAncestralDiscreteScheduler
-import requests
-import json
+#from diffusers import StableDiffusionInstructPix2PixPipeline, EulerAncestralDiscreteScheduler
 
 app = FastAPI()
 
@@ -20,11 +19,14 @@ app.add_middleware(
     allow_headers=["*"],
     )
 
-model_id = "timbrooks/instruct-pix2pix"
+"""model_id = "timbrooks/instruct-pix2pix"
 pipe = StableDiffusionInstructPix2PixPipeline.from_pretrained(model_id, torch_dtype=torch.float32, safety_checker=None)
 pipe.to("cpu") # intel işlemci kullandığım için cuda çalıştırmıyor bu nedenle cpu kullandım.
 pipe.scheduler = EulerAncestralDiscreteScheduler.from_config(pipe.scheduler.config)
+"""
 
+pipe = DiffusionPipeline.from_pretrained("stabilityai/stable-diffusion-2-1-unclip-small", torch_dtype=torch.float32)
+pipe.to("cpu")
 
 
 @app.post("/img-2-img")
@@ -56,17 +58,11 @@ async def create_add(
     image = ImageOps.exif_transpose(image)
     image = image.convert("RGB")
 
-    prompt = prompt
+    prompt_template = f"{prompt}. Use the hex code {image_color} in new image."
 
-    prompt_template = f"{prompt}. Use the hex code {image_color} in image."
-
-    images = pipe(prompt_template, image=image, num_inference_steps=4, image_guidance_scale=1).images # num_inference_steps'i işlemci gücünden kısmak için küçülttüm sonuçları etkileyecektir.
+    images = pipe(image=image, prompt=prompt_template, num_inference_steps=8).images # num_inference_steps'i işlemci gücünden kısmak için küçülttüm sonuçları etkileyecektir.
 
     image = images[0]
-
-    image_path = "/Users/furkangulenc/Desktop/addCreativeTask/assets/kahve.jpg"
-
-    image = Image.open(image_path)
 
     result = create_marketing_image(image, punchline_text, button_text, button_and_punchline_color)
 
@@ -77,6 +73,3 @@ async def create_add(
 
     # StreamingResponse döndür
     return StreamingResponse(img_byte_arr, media_type="image/jpeg")
-
-
-#RGB değerini prompta ekle

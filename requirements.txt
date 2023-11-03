@@ -3,3 +3,6 @@ accelerate
 safetensors 
 transformers
 fastapi
+PIL
+io
+torch
