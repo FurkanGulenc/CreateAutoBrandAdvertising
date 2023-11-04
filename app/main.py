@@ -32,6 +32,11 @@ pipe = DiffusionPipeline.from_pretrained(
 pipe.to("cpu")
 
 
+@app.get("/")
+def reed_root():
+    return {"Hello": "World"}
+
+
 @app.post("/img-2-img")
 async def create_add(
     file: UploadFile = File(...),
