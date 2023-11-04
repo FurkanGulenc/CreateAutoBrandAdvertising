@@ -1,8 +1,5 @@
 diffusers 
-accelerate 
-safetensors 
-transformers
 fastapi
-PIL
-io
+Pillow==9.4.0
 torch
+uvicorn
